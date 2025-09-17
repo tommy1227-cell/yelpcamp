@@ -8,7 +8,7 @@ const Campground = require('./models/campground.js');
 const catchAsync = require('./utils/catchAsync');
 const morgan = require('morgan');
 const ejsMate = require('ejs-mate');
-const Joi =require('joi');
+const Joi = require('joi');
 
 mongoose.connect('mongodb://127.0.0.1:27017/yelpcamp')
     .then(() => {
@@ -60,14 +60,21 @@ app.get('/campgrounds/:id/edit', catchAsync(async (req, res) => {
 
 app.post('/campgrounds', catchAsync(async (req, res, next) => {
     // if (!req.body.campground) throw new ExpressError('不正なキャンプデータです', 400);
-    const campgroundSchema =Joi.object({
+    const campgroundSchema = Joi.object({
         campground: Joi.object({
-            title:Joi.string().required(),
-            price:Joi.number().required().min(0),
+            title: Joi.string().required(),
+            price: Joi.number().required().min(0),
+            image: Joi.string().required(),
+            location:Joi.string().required(),
+            description:Joi.string().required()
         }).required()
     });
 
-    const result=campgroundSchema.validate(req.body);
+    const {error} = campgroundSchema.validate(req.body);
+    if (error) {
+        const msg = error.details.map(detail => detail.message).join(',');
+        throw new ExpressError(msg,400);
+    }
     console.log(result);
     const campground = new Campground(req.body.campground);
     await campground.save();
@@ -91,11 +98,11 @@ app.use((req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-    const { statusCode = 500,} = err;
-    if (!err.message){
-        err.message='問題が起きました'
+    const { statusCode = 500, } = err;
+    if (!err.message) {
+        err.message = '問題が起きました'
     }
-    res.status(statusCode).render('error',{err})
+    res.status(statusCode).render('error', { err })
 });
 
 app.listen(3000, () => {
