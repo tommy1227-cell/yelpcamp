@@ -8,7 +8,7 @@ const Campground = require('./models/campground.js');
 const catchAsync = require('./utils/catchAsync');
 const morgan = require('morgan');
 const ejsMate = require('ejs-mate');
-const Joi = require('joi');
+const { campgroundSchema } = require('./schemas');
 
 mongoose.connect('mongodb://127.0.0.1:27017/yelpcamp')
     .then(() => {
@@ -30,6 +30,18 @@ app.use((req, res, next) => {
     next(); //ここで止めないためのもの
 });//ミドルウェアの通過の確認
 app.use(morgan('tiny')); //ログ管理
+
+const validateCampground = (req, res, next) => {
+
+    const { error } = campgroundSchema.validate(req.body);
+    if (error) {
+        const msg = error.details.map(detail => detail.message).join(',');
+        throw new ExpressError(msg, 400);
+    } else {
+        next();
+    }
+    console.log(result);
+}
 
 app.get('/', (req, res) => {
     res.render('home.ejs');
@@ -58,30 +70,15 @@ app.get('/campgrounds/:id/edit', catchAsync(async (req, res) => {
     res.render('campgrounds/edit', { campground });
 }));
 
-app.post('/campgrounds', catchAsync(async (req, res, next) => {
+app.post('/campgrounds', validateCampground, catchAsync(async (req, res, next) => {
     // if (!req.body.campground) throw new ExpressError('不正なキャンプデータです', 400);
-    const campgroundSchema = Joi.object({
-        campground: Joi.object({
-            title: Joi.string().required(),
-            price: Joi.number().required().min(0),
-            image: Joi.string().required(),
-            location:Joi.string().required(),
-            description:Joi.string().required()
-        }).required()
-    });
 
-    const {error} = campgroundSchema.validate(req.body);
-    if (error) {
-        const msg = error.details.map(detail => detail.message).join(',');
-        throw new ExpressError(msg,400);
-    }
-    console.log(result);
     const campground = new Campground(req.body.campground);
     await campground.save();
     res.redirect(`/campgrounds/${campground._id}`);
 }));
 
-app.put('/campgrounds/:id', catchAsync(async (req, res) => {
+app.put('/campgrounds/:id', validateCampground, catchAsync(async (req, res) => {
     const { id } = req.params;
     const campground = await Campground.findByIdAndUpdate(id, { ...req.body.campground })
     res.redirect(`/campgrounds/${campground._id}`);
