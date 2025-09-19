@@ -3,14 +3,14 @@ const app = express();
 const path = require('path');
 const methodOverride = require('method-override');
 const mongoose = require('mongoose');
-const ExpressError = require('./utils/ExpressError.js')
-const Campground = require('./models/campground.js');
+const ExpressError = require('./utils/ExpressError.js');
 const catchAsync = require('./utils/catchAsync');
-const morgan = require('morgan');
 const ejsMate = require('ejs-mate');
-const { campgroundSchema, reviewSchema } = require('./schemas');
-const Review = require('./models/review');
+const morgan = require('morgan');
 
+
+const campgroundRoutes = require('./routes/campgrounds');
+const reviewRoutes = require('./routes/reviews');
 mongoose.connect('mongodb://127.0.0.1:27017/yelpcamp')
     .then(() => {
         console.log('接続しています')
@@ -32,96 +32,23 @@ app.use((req, res, next) => {
 });//ミドルウェアの通過の確認
 app.use(morgan('tiny')); //ログ管理
 
-const validateCampground = (req, res, next) => {
 
-    const { error } = campgroundSchema.validate(req.body);
-    if (error) {
-        const msg = error.details.map(detail => detail.message).join(',');
-        throw new ExpressError(msg, 400);
-    } else {
-        next();
-    }
-    console.log(result);
-}
 
-const validateReview = (req, res, next) => {
-    const { error } = reviewSchema.validate(req.body);
-    if (error) {
-        const msg = error.details.map(detail => detail.message).join(',');
-        throw new ExpressError(msg, 400);
-    } else {
-        next();
-    }
-}
 
 app.get('/', (req, res) => {
     res.render('home.ejs');
 });
 
-app.get('/campgrounds', catchAsync(async (req, res) => {
-    const campgrounds = await Campground.find({});
-    res.render('campgrounds/index', { campgrounds });
-}));
+app.use('/campgrounds', campgroundRoutes);
+app.use('/campgrounds/:id/reviews', reviewRoutes);
 
-app.get('/campgrounds/new', (req, res) => {
-    res.render('campgrounds/new.ejs',)
-})
-
-app.get('/campgrounds/:id', catchAsync(async (req, res) => {
-    const campground = await Campground.findById(req.params.id).populate('reviews');
-    console.log(campground)
-    res.render('campgrounds/show', { campground });
-}));
-
-app.get('/practice', (req, res) => {
-    res.send('接続確認');
-});
-
-app.get('/campgrounds/:id/edit', catchAsync(async (req, res) => {
-    const campground = await Campground.findById(req.params.id);
-    res.render('campgrounds/edit', { campground });
-}));
-
-app.post('/campgrounds', validateCampground, catchAsync(async (req, res, next) => {
-    // if (!req.body.campground) throw new ExpressError('不正なキャンプデータです', 400);
-
-    const campground = new Campground(req.body.campground);
-    await campground.save();
-    res.redirect(`/campgrounds/${campground._id}`);
-}));
-
-app.put('/campgrounds/:id', validateCampground, catchAsync(async (req, res) => {
-    const { id } = req.params;
-    const campground = await Campground.findByIdAndUpdate(id, { ...req.body.campground })
-    res.redirect(`/campgrounds/${campground._id}`);
-}));
-
-app.delete('/campgrounds/:id', catchAsync(async (req, res) => {
-    const { id } = req.params;
-    await Campground.findByIdAndDelete(id);
-    res.redirect('/campgrounds')
-}));
 
 // app.post('/campgrounds/:id/reviews',catchAsync(async (req, res,) =>{
 //     console.log(req.body)
 //     res.send('テスト')
 // }));
 
-app.post('/campgrounds/:id/reviews', validateReview, catchAsync(async (req, res,) => {
-    const campground = await Campground.findById(req.params.id);
-    const review = new Review(req.body.review);
-    campground.reviews.push(review);
-    await review.save();
-    await campground.save();
-    res.redirect(`/campgrounds/${campground._id}`);
-}));
 
-app.delete('/campgrounds/:id/reviews/:reviewId', catchAsync(async (req, res) => {
-    const { id, reviewId } = req.params;
-    await Campground.findByIdAndUpdate(id, { $pull: { reviews: reviewId } })
-    await Review.findByIdAndDelete(reviewId)
-    res.redirect(`/campgrounds/${id}`);
-}));
 
 app.use((req, res, next) => {
     next(new ExpressError('ページが見つかりません', 404));
