@@ -7,6 +7,8 @@ const ExpressError = require('./utils/ExpressError.js');
 const catchAsync = require('./utils/catchAsync');
 const ejsMate = require('ejs-mate');
 const morgan = require('morgan');
+const session = require('express-session');
+const flash = require('connect-flash');
 
 
 const campgroundRoutes = require('./routes/campgrounds');
@@ -31,6 +33,26 @@ app.use((req, res, next) => {
     next(); //ここで止めないためのもの
 });//ミドルウェアの通過の確認
 app.use(morgan('tiny')); //ログ管理
+app.use(express.static(path.join(__dirname, 'public')))
+
+const sessionConfig = {
+    secret: 'mysecret',
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        // httponlyはセキュリティ上必ずtrueにしておく
+        httponly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 7
+    }
+};
+app.use(session(sessionConfig));
+app.use(flash());
+
+app.use('/', (req, res, next) => {
+    res.locals.success= req.flash('success');
+    res.locals.error = req.flash('error');
+    next();
+})
 
 
 
