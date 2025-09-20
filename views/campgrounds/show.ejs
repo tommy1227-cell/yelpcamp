@@ -16,6 +16,9 @@
                         <%= campground.location %>
                     </li>
                     <li class="list-group-item">
+                        登録者：<%= campground.author.username %>
+                    </li>
+                    <li class="list-group-item">
                         <%= campground.price %>/泊
                     </li>
                 </ul>
@@ -58,7 +61,8 @@
                         <p class="card-text">
                             コメント：<%= review.body %>
                         </p>
-                        <form action="/campgrounds/<%= campground._id  %>/reviews/<%= review._id %>?_method=DELETE" method="POST">
+                        <form action="/campgrounds/<%= campground._id  %>/reviews/<%= review._id %>?_method=DELETE"
+                            method="POST">
                             <button class="btn btn-sm btn-danger">削除</button>
                         </form>
                     </div>
