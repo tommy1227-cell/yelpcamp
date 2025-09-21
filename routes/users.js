@@ -35,7 +35,7 @@ router.get('/login', (req, res) => {
 // passport.autenticate(カスタム) ログインを勝手にしてくれる。
 router.post('/login',storeReturnTo, passport.authenticate('local', { failureFlash: true, failureRedirect: '/login' }), (req, res) => {
     req.flash('success', 'おかえりなさい');
-    const redirectUrl = res.locals.returnTo
+    const redirectUrl = res.locals.returnTo || '/campgrounds';
     res.redirect(redirectUrl);
 });
 

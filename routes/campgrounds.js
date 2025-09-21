@@ -41,13 +41,22 @@ router.get('/:id', catchAsync(async (req, res) => {
 
 router.get('/:id/edit', isLoggedIn, catchAsync(async (req, res) => {
     const campground = await Campground.findById(req.params.id);
-    res.render('campgrounds/edit', { campground });
+    if (!campground) {
+        req.flash('error', 'キャンプ場が見つかりませんでした')
+        return res.redirect('/campgrounds');
+    };
+    if (!campground.author.equals(req.user._id)) {
+        req.flash('error', '更新する権限がありません');
+        res.redirect(`/campgrounds/${campground._id}`);
+    }
+    // 講義ではislogdinで権限をまとめているがredirectが重なりエラーになるため保留
+    else { res.render('campgrounds/edit', { campground }) };
 }));
 
 router.post('/', isLoggedIn, validateCampground, catchAsync(async (req, res, next) => {
     // if (!req.body.campground) throw new ExpressError('不正なキャンプデータです', 400);
     const campground = new Campground(req.body.campground);
-    campground.author=req.user._id;
+    campground.author = req.user._id;
     await campground.save();
     req.flash('success', '新しいキャンプ場を登録しました。')
     res.redirect(`/campgrounds/${campground._id}`);
@@ -55,9 +64,16 @@ router.post('/', isLoggedIn, validateCampground, catchAsync(async (req, res, nex
 
 router.put('/:id', isLoggedIn, validateCampground, catchAsync(async (req, res) => {
     const { id } = req.params;
-    const campground = await Campground.findByIdAndUpdate(id, { ...req.body.campground })
-    req.flash('success', '更新完了')
-    res.redirect(`/campgrounds/${campground._id}`);
+    const campground = await Campground.findById(id)
+    if (!campground.author.equals(req.user._id)) {
+        req.flash('error', '更新する権限がありません');
+        res.redirect(`/campgrounds/${campground._id}`);
+    }
+    else {
+        const camp = await Campground.findByIdAndUpdate(id, { ...req.body.campground })
+        req.flash('success', '更新完了')
+        res.redirect(`/campgrounds/${camp._id}`)
+    };
 }));
 
 router.delete('/:id', isLoggedIn, catchAsync(async (req, res) => {

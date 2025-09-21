@@ -22,12 +22,14 @@
                         <%= campground.price %>/泊
                     </li>
                 </ul>
+                <% if(currentUser && campground.author.equals(currentUser._id) ){ %>
                 <div class="card-body">
                     <a class="btn btn-info" href="/campgrounds/<%= campground._id %>/edit">編集</a>
                     <form class="d-inline" action="/campgrounds/<%= campground._id %>?_method=DELETE" method="POST">
                         <button class="btn btn-danger">削除する</button>
                     </form>
                 </div>
+                <% } %>
                 <div class="card-footer text-muted">
                     <footer>
                         <a href="/campgrounds">return</a>
